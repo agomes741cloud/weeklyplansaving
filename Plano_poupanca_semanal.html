@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plano de Poupança Semanal</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #2563eb;
+      --accent2: #16a34a;
+      --danger: #dc2626;
+      --success-bg: #dcfce7; /* Nova cor de fundo para o mês concluído */
+      --success-text: #15803d; /* Nova cor de texto para o mês concluído */
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #eef4ff, var(--bg));
+      color: var(--text);
+      padding: 24px;
+    }
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.4rem); }
+    .subtitle { margin: 8px 0 0; color: var(--muted); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .stat, .panel {
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+    }
+    .stat { padding: 18px; }
+    .label { color: var(--muted); font-size: .9rem; margin-bottom: 6px; }
+    .value { font-size: 1.8rem; font-weight: 800; }
+    .progress-wrap {
+      background: #dbeafe;
+      height: 20px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #bfdbfe;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .25s ease;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      background: var(--accent);
+      color: white;
+    }
+    button.secondary { background: #475569; }
+    button.danger { background: var(--danger); }
+    .panel { padding: 12px; }
+    .months { display: grid; gap: 12px; }
+    details.month-section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    details.month-section[open] { box-shadow: 0 10px 24px rgba(15, 23, 42, .07); }
+    summary.month-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #f8fafc;
+      font-weight: 800;
+      color: #1e40af;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    summary.month-summary::-webkit-details-marker { display: none; }
+    
+    /* Estilos para quando o mês estiver totalmente concluído */
+    details.month-section.month-success summary.month-summary {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+    .check-icon {
+      color: var(--accent2);
+      font-weight: 900;
+      margin-left: 6px;
+    }
+
+    .summary-left { display: flex; align-items: center; gap: 10px; }
+    .chevron { transition: transform .2s ease; color: #64748b; }
+    details[open] .chevron { transform: rotate(90deg); }
+    
+    /* Ajuste para o chevron continuar cinzento/discreto mesmo no modo verde */
+    details.month-section.month-success .chevron { color: #16a34a; }
+
+    .month-meta { color: var(--muted); font-weight: 700; font-size: .9rem; text-align: right; }
+    details.month-section.month-success .month-meta { color: var(--success-text); }
+
+    .week-list { display: grid; }
+    .week-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 13px 16px;
+      border-top: 1px solid var(--line);
+    }
+    .week-row.done { background: #f0fdf4; color: #166534; }
+    .week-title { font-weight: 700; }
+    .amount { font-weight: 800; }
+    input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent2);
+      cursor: pointer;
+    }
+    @media (max-width: 720px) {
+      body { padding: 14px; }
+      .stats { grid-template-columns: 1fr; }
+      summary.month-summary { align-items: flex-start; }
+      .week-row { grid-template-columns: 1fr auto; }
+      .week-row input { grid-column: 2; grid-row: 1 / span 2; }
+      .amount { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Plano de Poupança Semanal</h1>
+        <p class="subtitle">Assinala as semanas concluídas e acompanha o progresso automaticamente.</p>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat">
+        <div class="label">Valor já poupado</div>
+        <div class="value" id="savedTotal">0€</div>
+      </div>
+      <div class="stat">
+        <div class="label">Objetivo total</div>
+        <div class="value" id="goalTotal">0€</div>
+      </div>
+      <div class="stat">
+        <div class="label">Semanas concluídas</div>
+        <div class="value" id="weeksDone">0/52</div>
+      </div>
+    </section>
+
+    <section class="stat" style="margin-bottom:18px;">
+      <div class="toolbar">
+        <strong>Progresso: <span id="progressText">0%</span></strong>
+        <div>
+          <button class="secondary" id="expandAll">Expandir tudo</button>
+          <button class="secondary" id="collapseAll">Colapsar tudo</button>
+          <button class="secondary" id="checkAll">Marcar tudo</button>
+          <button class="danger" id="resetAll">Limpar</button>
+        </div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    </section>
+
+    <section class="panel">
+      <div class="months" id="planBody"></div>
+    </section>
+  </div>
+
+  <script>
+    const plan = [
+      ['Janeiro',1,1], ['',2,2], ['',3,3], ['',4,4], ['',5,5],
+      ['Fevereiro',6,6], ['',7,7], ['',8,8], ['',9,9],
+      ['Março',10,10], ['',11,15], ['',12,20], ['',13,25],
+      ['Abril',14,25], ['',15,25], ['',16,25], ['',17,25],
+      ['Maio',18,25], ['',19,25], ['',20,30], ['',21,30], ['',22,35],
+      ['Junho',23,35], ['',24,35], ['',25,35], ['',26,35],
+      ['Julho',27,35], ['',28,35], ['',29,35], ['',30,35], ['',31,35],
+      ['Agosto',32,30], ['',33,30], ['',34,25], ['',35,25],
+      ['Setembro',36,25], ['',37,25], ['',38,25], ['',39,25],
+      ['Outubro',40,25], ['',41,20], ['',42,15], ['',43,10], ['',44,9],
+      ['Novembro',45,8], ['',46,7], ['',47,6], ['',48,5],
+      ['Dezembro',49,4], ['',50,3], ['',51,2], ['',52,1]
+    ];
+
+    const STORAGE_KEY = 'planoPoupancaSemanalChecks';
+    let checked = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const totalGoal = plan.reduce((sum, row) => sum + row[2], 0);
+    const tbody = document.getElementById('planBody');
+
+    function money(value) {
+      return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+    }
+
+    function groupedPlan() {
+      const groups = [];
+      let current = null;
+      plan.forEach(([month, week, amount]) => {
+        if (month) {
+          current = { month, weeks: [] };
+          groups.push(current);
+        }
+        current.weeks.push({ week, amount });
+      });
+      return groups;
+    }
+
+    function render() {
+      tbody.innerHTML = '';
+      groupedPlan().forEach(({ month, weeks }) => {
+        const monthTotal = weeks.reduce((sum, item) => sum + item.amount, 0);
+        const monthSaved = weeks.reduce((sum, item) => sum + (checked[item.week] ? item.amount : 0), 0);
+        const monthDone = weeks.filter(item => checked[item.week]).length;
+        
+        // Verifica se todas as semanas deste mês estão feitas
+        const isMonthComplete = monthDone === weeks.length;
+
+        const details = document.createElement('details');
+        // Se estiver completo, adiciona a classe 'month-success'
+        details.className = `month-section ${isMonthComplete ? 'month-success' : ''}`;
+        
+        details.innerHTML = `
+          <summary class="month-summary">
+            <span class="summary-left">
+              <span class="chevron">▶</span>
+              ${month}
+              ${isMonthComplete ? '<span class="check-icon">✓</span>' : ''}
+            </span>
+            <span class="month-meta">${monthDone}/${weeks.length} semanas · ${money(monthSaved)} / ${money(monthTotal)}</span>
+          </summary>
+          <div class="week-list">
+            ${weeks.map(({ week, amount }) => `
+              <label class="week-row ${checked[week] ? 'done' : ''}">
+                <span class="week-title">Semana ${week}</span>
+                <span class="amount">${money(amount)}</span>
+                <input type="checkbox" aria-label="Semana ${week}" data-week="${week}" ${checked[week] ? 'checked' : ''}>
+              </label>
+            `).join('')}
+          </div>`;
+        tbody.appendChild(details);
+      });
+      updateStats();
+    }
+
+    function updateStats() {
+      const doneRows = plan.filter(([, week]) => checked[week]);
+      const saved = doneRows.reduce((sum, [, , amount]) => sum + amount, 0);
+      const percent = totalGoal ? Math.round((saved / totalGoal) * 100) : 0;
+      document.getElementById('savedTotal').textContent = money(saved);
+      document.getElementById('goalTotal').textContent = money(totalGoal);
+      document.getElementById('weeksDone').textContent = `${doneRows.length}/${plan.length}`;
+      document.getElementById('progressText').textContent = `${percent}%`;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+    }
+
+    tbody.addEventListener('change', (event) => {
+      if (event.target.matches('input[type="checkbox"]')) {
+        const week = event.target.dataset.week;
+        checked[week] = event.target.checked;
+        const openedMonths = [...document.querySelectorAll('details.month-section')].map((item, index) => item.open ? index : null).filter(index => index !== null);
+        render();
+        openedMonths.forEach(index => {
+          const details = document.querySelectorAll('details.month-section')[index];
+          if (details) details.open = true;
+        });
+      }
+    });
+
+    document.getElementById('expandAll').addEventListener('click', () => {
+      document.querySelectorAll('details.month-section').forEach(details => details.open = true);
+    });
+
+    document.getElementById('collapseAll').addEventListener('click', () => {
+      document.querySelectorAll('details.month-section').forEach(details => details.open = false);
+    });
+
+    document.getElementById('checkAll').addEventListener('click', () => {
+      plan.forEach(([, week]) => checked[week] = true);
+      render();
+    });
+
+    document.getElementById('resetAll').addEventListener('click', () => {
+      if (confirm('Queres limpar todas as verificações?')) {
+        checked = {};
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
